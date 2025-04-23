@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-02%ebh5tra7!u^-l(*&a+^$nrzd36m$baf5@8fxs+fnjpe%zi8'
 DEBUG = True
-ALLOWED_HOSTS = [ '192.168.168.212','192.168.137.25','192.168.92.121','192.168.139.212',  '192.168.137.1','192.168.1.102', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = [ '192.168.126.212','192.168.47.212',  '192.168.137.1','192.168.1.102', '127.0.0.1', 'localhost']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -43,18 +43,9 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:19006',
     'http://localhost:8082',  # Add Expo ports
     'http://192.168.1.102',  # Better IP pattern
-    'http://192.168.139.212:8081',  # Add your React Native server IP
     'http://192.168.137.1',  # Better IP pattern
-    'http://192.168.92.121',  # Better IP pattern
-    'http://192.168.137.25',  # Better IP pattern
-    'http://192.168.168.212',  # Better IP pattern
-]
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8081',
-    'http://192.168.139.212:8081',
-    'http://192.168.92.121:8081',
-    'http://192.168.137.25',
-    'http://192.168.168.212',
+    'http://192.168.47.212',  # Better IP pattern
+    'http://192.168.126.212',  # Better IP pattern
 ]
 ROOT_URLCONF = 'project.urls'
 

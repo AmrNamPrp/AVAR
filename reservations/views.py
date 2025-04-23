@@ -1,11 +1,10 @@
 from .filters import RealEstateFilter
 from .serializer import ReservationPeriodSerializer,NewRealEstateSerializer,RealEstateSerializer,ReviewSerializer,SecondReviewSerializer,FavouritSerializer,MyRealEstatesSerializer,MyReservationsSerializer
-from .models import ReservationPeriod,RealEstate,Review,NewRealEstate,Second_Review,Favourits
+from .models import Notifications,MyReservations,ReservationPeriod,RealEstate,Review,NewRealEstate,Second_Review,Favourits
 from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from django.db.models import Avg
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
-from django.core.cache import cache
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -14,14 +13,24 @@ from .models import RealEstate, Favourits
 from rest_framework_simplejwt.authentication import JWTAuthentication  # or your respective auth class
 
 
+
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([AllowAny])
 def gallery(request):
     # Include the user's id in the cache key if they are authenticated; otherwise, use 'anon'
+    # is_person=1
+    # if user is not None:
+    #     print("hiii",user)
+    #     if getattr(user, 'person', None) is None:
+    #         is_person = 0
+
+
+    user=request.user
 
     filterset = RealEstateFilter(request.GET, queryset=RealEstate.objects.all())
-    print(1)
+    print(11)
+    #print(user.person.name)
     serializer = RealEstateSerializer(
         filterset.qs,
         many=True,
@@ -103,6 +112,11 @@ def new_realestate(request):
     serializer = NewRealEstateSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(user=request.user)
+        # Notifications.objects.create(
+        #     user_to=request.user,
+        #     user_from=request.user,
+        #     describtion='سنتواصل معك على رقمك ,نرجو الانتظار'
+        # )
         return Response({'details': 'تم استلام طلبك بنجاح'}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -115,25 +129,28 @@ def favourit_view(request):
     return  Response({'your favourites':serializeer.data})
 
 
-
 @permission_classes([IsAuthenticated])
 @api_view(['GET'])
 def profile(request):
-    user=request.user
-    person=user.person
-    reservations=user.reservations
-    myrealestates=user.myrealestates
-    serializer_rel=MyRealEstatesSerializer(myrealestates,many=True,context={'request': request})
-    serializer_res=MyReservationsSerializer(reservations,many=True,context={'request': request})
+    user = request.user
+    person = user.person
+    # Filter reservations where the reservationPeriod's status is 'accepted'
+    accepted_reservations = user.reservations.filter(reservationPeriod__status='accepted')
+    myrealestates = user.myrealestates
+
+    serializer_rel = MyRealEstatesSerializer(myrealestates, many=True, context={'request': request})
+    serializer_res = MyReservationsSerializer(accepted_reservations, many=True, context={'request': request})
+
     return Response({
-                    'name':person.name,
-                    'phone':person.phone,
-                    'email':person.email,
-                    'city':person.city,
-                    'username':user.username,
-                     'your reservations are':serializer_res.data,
-                     'your real estates are':serializer_rel.data
-                     })
+        'name': person.name,
+        'phone': person.phone,
+        'email': person.email,
+        'city': person.city,
+        'username': user.username,
+        'your reservations are': serializer_res.data,
+        'your real estates are': serializer_rel.data
+    })
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -177,7 +194,18 @@ def create_reservation_period(request, realestate_id):
             end_date=end_date,
             status='pending'
         )
+        print('1   ')
+        print(realestate_id)
+        MyReservations.objects.create(
+            user=request.user,
+            realestate_id=realestate_id,
+            reservationPeriod=reservation
+        )
         print("reservation")
+        # Notifications.objects.create(
+        #     user_to=request.user,
+        #     describtion='نرجو منك دفع الدفعة الاولى من الحجز حتى يتم تثبيت حجزك'
+        # )
         serializer = ReservationPeriodSerializer(reservation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except Exception as e:
@@ -190,7 +218,7 @@ def get_accepted_reservations(request, realestate_id):
     # Filter for reservations with status accepted or DayOff
     reservations = ReservationPeriod.objects.filter(
         realestate_id=realestate_id,
-        status__in=['accepted', 'DayOff']
+        status__in=['accepted', 'DayOff','pending']
     )
     print('1111111111111111111   ')
     serializer = ReservationPeriodSerializer(reservations, many=True)
@@ -218,7 +246,12 @@ def create_DaysOff_period(request, realestate_id):
             end_date=end_date,
             status='DayOff'
         )
+        # Notifications.objects.create(
+        #     user_to=request.user,
+        #     describtion='لقد تم بنجاح تحديد تاريخ عطلتك و شكرا لك'
+        # )
         serializer = ReservationPeriodSerializer(reservation)
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -243,3 +276,4 @@ def property_bookings(request, realestate_id):
         "accepted_reservations": accepted_serializer.data,
         "dayoff_reservations": dayoff_serializer.data,
     })
+

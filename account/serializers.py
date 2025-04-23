@@ -58,13 +58,7 @@ class SingUpSerializerPerson(serializers.ModelSerializer):
             'email': {'required': False, 'allow_blank': True},
         }
 
-    def validate_phone(self, value):
-        """
-        Validate that the phone number is unique.
-        """
-        if Person.objects.filter(phone=value).exists():
-            raise serializers.ValidationError("This phone number is already in use.")
-        return value
+
 
 
 class LogInSerializer(serializers.ModelSerializer):

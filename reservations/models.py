@@ -1,8 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
-# Create your models here.
-
+from django.db.models import CASCADE, PROTECT
 
 
 class Extras(models.Model):
@@ -55,8 +53,8 @@ class RealEstate(models.Model):
         ('No','No')
 
     )
-    basics=models.ManyToManyField(Basics,null=True)
-    extras=models.ManyToManyField(Extras,null=True)
+    basics=models.ManyToManyField(Basics)
+    extras=models.ManyToManyField(Extras)
     price = models.DecimalField(decimal_places=2,null=True, max_digits=10, verbose_name='السعر')
     city=models.CharField(max_length=30,null=True,choices=cities,verbose_name='المحافظة')
     town=models.CharField(max_length=30,default="",verbose_name='المنطقة')
@@ -68,11 +66,10 @@ class RealEstate(models.Model):
     period=models.CharField(max_length=30,null=True,choices=periods,verbose_name='باليوم او بالشهر؟')
     ratings = models.DecimalField(max_digits=3,decimal_places=2,default=0)
     photo = models.ImageField(upload_to='photo/properties', null=True, blank=True)
+    describtion=models.TextField(default='')
     latitude = models.FloatField(null=True, blank=True, verbose_name='خط العرض')
     longitude = models.FloatField(null=True, blank=True, verbose_name='خط الطول')
 
-    # extras=models.ManyToManyField(Extras,null=True,blank=False,verbose_name='معلومات اضافية')
-    # comments=models.ManyToManyField(Comments,null=True,blank=False,verbose_name='التعليقات')
 
     def __str__(self):
         return self.town
@@ -104,10 +101,6 @@ class Second_Review(models.Model):
         return self.comment
 
 
-# models.py
-
-# ... your other models (RealEstate, etc.)
-
 class ReservationPeriod(models.Model):
 
     status=(
@@ -131,6 +124,7 @@ class ReservationPeriod(models.Model):
     end_date = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
     status=models.CharField(default='',max_length=30,choices=status)
+
     def __str__(self):
         return f"{self.realestate} reserved from {self.start_date} to {self.end_date}"
 
@@ -178,14 +172,23 @@ class Favourits(models.Model):
 
 
 class MyReservations(models.Model):
+
     user = models.ForeignKey(User, on_delete=models.CASCADE,verbose_name='صاحب العقار', related_name='reservations')
     realestate = models.ForeignKey(RealEstate, on_delete=models.CASCADE,verbose_name='العقار', related_name='reservation_list')
+    reservationPeriod=models.ForeignKey(ReservationPeriod,null=True,on_delete=CASCADE)
+
     def __str__(self):
         return self.user.username
 
 
 class MyRealEstates(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE,verbose_name='صاحب العقار', related_name='myrealestates')
-    realestate = models.ForeignKey(RealEstate, on_delete=models.CASCADE,verbose_name='العقار', related_name='myrealestates_list')
+    realestate = models.OneToOneField(RealEstate, on_delete=models.CASCADE,verbose_name='العقار', related_name='myrealestates_list')
     def __str__(self):
         return self.user.username
+
+
+class Notifications(models.Model):
+    user_from=models.ForeignKey(User,null=True,on_delete=PROTECT,related_name='user_from')
+    user_to=models.ForeignKey(User,null=True,default='',on_delete=CASCADE,related_name='user_to')
+    describtion=models.TextField(default='')

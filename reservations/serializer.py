@@ -30,6 +30,7 @@ class RealEstateSerializer(serializers.ModelSerializer):
     basics = BasicsSerializer(many=True, read_only=True)  # For "المعلومات الاساسية"
     extras = ExtrasSerializer(many=True, read_only=True)  # For "المعلومات الإضافية"
     images = RealEstateImagesSerializer(many=True, read_only=True)  # For additional images
+    # photo_url = serializers.SerializerMethodField()
 
     class Meta:
         model = RealEstate
@@ -38,7 +39,7 @@ class RealEstateSerializer(serializers.ModelSerializer):
             'max_members', 'rooms', 'bathrooms',
             'pool', 'period', 'ratings', 'photo',
             'is_favorite', 'basics', 'extras', 'images',
-            'latitude', 'longitude'
+            'latitude', 'longitude','describtion'
         ]
 
     def get_is_favorite(self, obj):
@@ -52,6 +53,11 @@ class RealEstateSerializer(serializers.ModelSerializer):
             return is_favorite
         return False
 
+    # def get_photo_url(self, obj):
+    #     request = self.context.get('request')
+    #     if obj.photo and request:
+    #         return request.build_absolute_uri(obj.photo.url)
+    #     return None
 
 class NewRealEstateSerializer(serializers.ModelSerializer):
 
@@ -88,7 +94,15 @@ class MyReservationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyReservations
         fields = '__all__'
-
+    # def get_just_accepted(self, obj):
+    #
+    #     the_accepted_ones = obj.reservationPeriod.filter(status='accepted')
+    #     print('3           2')
+    #     print(the_accepted_ones)
+    #
+    #
+    #
+    #     return the_accepted_ones
 class ReservationPeriodSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReservationPeriod
@@ -106,7 +120,7 @@ class MyRealEstatesSerializer(serializers.ModelSerializer):
 
 class ReservationPeriodSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.username', read_only=True)
-    user_phone = serializers.CharField(source='user.phone', read_only=True)
+    user_phone = serializers.CharField(source='user.person.phone', read_only=True)
 
     class Meta:
         model = ReservationPeriod

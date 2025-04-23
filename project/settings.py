@@ -4,9 +4,9 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-02%ebh5tra7!u^-l(*&a+^$nrzd36m$baf5@8fxs+fnjpe%zi8'
-DEBUG = True
-ALLOWED_HOSTS = [ '192.168.126.212','192.168.47.212',  '192.168.137.1','192.168.1.102', '127.0.0.1', 'localhost']
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'fallback-secret-key')
+DEBUG = False
+ALLOWED_HOSTS = ['amrnamora.pythonanywhere.com']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -36,16 +36,14 @@ MIDDLEWARE = [
 ]
 
 # CORS Settings
-CORS_ALLOW_ALL_ORIGINS = True  # For development only
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:19006',
-    'http://127.0.0.1:19006',
-    'http://localhost:8082',  # Add Expo ports
-    'http://192.168.1.102',  # Better IP pattern
-    'http://192.168.137.1',  # Better IP pattern
-    'http://192.168.47.212',  # Better IP pattern
-    'http://192.168.126.212',  # Better IP pattern
+    'https://amrnamora.pythonanywhere.com',
+
+]
+CSRF_TRUSTED_ORIGINS = [
+
+    'https://amrnamora.pythonanywhere.com',
 ]
 ROOT_URLCONF = 'project.urls'
 
@@ -114,6 +112,7 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 DEFAULT_CHARSET = 'utf-8'
+STATIC_ROOT='staticfiles'
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'

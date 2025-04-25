@@ -2,10 +2,12 @@ from django.contrib import admin
 
 # Register your models here.
 from django.contrib import admin
-from .models import Notifications,ReservationPeriod,Second_Review,RealEstate_Images,NewRealEstate,Review,RealEstate,Extras,Favourits,MyReservations,MyRealEstates,Basics
+from .models import Notifications_reservation,Notifications,ReservationPeriod,Second_Review,RealEstate_Images,NewRealEstate,Review,RealEstate,Extras,Favourits,MyReservations,MyRealEstates,Basics
 # Register your models here.
 
 admin.site.register(Review)
+
+admin.site.register(Notifications_reservation)
 admin.site.register(Notifications)
 admin.site.register(RealEstate_Images)
 admin.site.register(NewRealEstate)
@@ -16,8 +18,10 @@ admin.site.register(Favourits)
 admin.site.register(Basics)
 admin.site.register(Second_Review)
 admin.site.register(ReservationPeriod)
-
-
+#
+# class note(admin.ModelAdmin):
+#     fields = ['describtion', 'createAt']
+# admin.site.register(Notifications, note)
 
 # Register your models here.
 class RealEstate_admin(admin.ModelAdmin):
@@ -41,7 +45,7 @@ class RealEstate_admin(admin.ModelAdmin):
     # will put box to search among the products based on name
     list_filter = ['city']
     # will create filters based on category and price
-    #fields = ['name', 'price', 'category']
+    # fields = ['name', 'price', 'category']
     # when you click on the name you will see all information for that products
     # but with this line now you will see just name , price and category
 

@@ -229,6 +229,7 @@ User = get_user_model()
 
 
 class SignUpView(APIView):
+
     def post(self, request):
         # Split the data into user and person data
         user_data = {
@@ -260,7 +261,7 @@ class SignUpView(APIView):
 
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
-
+            message='اهلا وسهلا بك في AVAR'
             return Response({
                 'message': 'User registered successfully',
                 'user_id': user.id,

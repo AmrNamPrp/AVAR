@@ -101,14 +101,13 @@ class Second_Review(models.Model):
         return self.comment
 
 
+
 class ReservationPeriod(models.Model):
-
-    status=(
-       ('pending','pending'),
-       ('rejected','rejected'),
-       ('accepted','accepted'),
-       ('DayOff','DayOff'),
-
+    STATUS_CHOICES = (
+       ('pending', 'pending'),
+       ('rejected', 'rejected'),
+       ('accepted', 'accepted'),
+       ('DayOff', 'DayOff'),
     )
     user = models.ForeignKey(
         User,
@@ -116,14 +115,22 @@ class ReservationPeriod(models.Model):
         related_name='reservation_periods'
     )
     realestate = models.ForeignKey(
-        RealEstate,
+        'RealEstate',
         on_delete=models.CASCADE,
         related_name='reservation_periods'
     )
     start_date = models.DateField()
     end_date = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
-    status=models.CharField(default='',max_length=30,choices=status)
+    status = models.CharField(default='pending', max_length=30, choices=STATUS_CHOICES)
+    # New field to record which handler (if any) has taken the reservation:
+    assigned_handler = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="assigned_reservations"
+    )
 
     def __str__(self):
         return f"{self.realestate} reserved from {self.start_date} to {self.end_date}"
@@ -188,7 +195,77 @@ class MyRealEstates(models.Model):
         return self.user.username
 
 
+
+class Notifications_reservation(models.Model):
+    NOTIFICATION_TYPE_CHOICES = (
+        ('self', 'Self'),
+        ('group_request', 'Group Request'),
+        ('assignment', 'Assignment'),
+        ('result', 'Result'),
+    )
+    # user_from = models.ForeignKey(
+    #     User,
+    #     null=True,
+    #     on_delete=PROTECT,
+    #     related_name='Notifications_reservation_from'
+    # )
+    user_to = models.ForeignKey(
+        User,
+        null=True,
+        on_delete=CASCADE,
+        related_name='Notifications_reservation_to'
+    )
+    describtion = models.TextField(default='')
+    notification_type = models.CharField(
+        max_length=30,
+        choices=NOTIFICATION_TYPE_CHOICES,
+        default='self'
+    )
+    # Optional link to the reservation (if applicable).
+    reservation = models.ForeignKey(
+        ReservationPeriod,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='Notifications_reservation'
+    )
+    createAt = models.DateTimeField(null=True,auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification to {self.user_to}  - {self.describtion}"
+
+
+
+
 class Notifications(models.Model):
-    user_from=models.ForeignKey(User,null=True,on_delete=PROTECT,related_name='user_from')
-    user_to=models.ForeignKey(User,null=True,default='',on_delete=CASCADE,related_name='user_to')
-    describtion=models.TextField(default='')
+    NOTIFICATION_TYPE_CHOICES = (
+        ('self', 'Self'),
+        ('group_request', 'Group Request'),
+        ('assignment', 'Assignment'),
+        ('result', 'Result'),
+    )
+    # user_from = models.ForeignKey(
+    #     User,
+    #     null=True,
+    #     on_delete=PROTECT,
+    #     related_name='notifications_from'
+    # )
+    user_to = models.ForeignKey(
+        User,
+        null=True,
+        on_delete=CASCADE,
+        related_name='notifications_to'
+    )
+    describtion = models.TextField(default='')
+    notification_type = models.CharField(
+        max_length=30,
+        choices=NOTIFICATION_TYPE_CHOICES,
+        default='self'
+    )
+    createAt = models.DateTimeField(null=True,auto_now_add=True)
+
+    # Optional link to the reservation (if applicable).
+
+
+    def __str__(self):
+        return f"Notification to {self.user_to}  - {self.describtion}"

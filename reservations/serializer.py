@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ReservationPeriod,RealEstate_Images,Extras,Basics,RealEstate, Review, NewRealEstate, Second_Review, Favourits, MyReservations, MyRealEstates
+from .models import Notifications,Notifications_reservation,ReservationPeriod,RealEstate_Images,Extras,Basics,RealEstate, Review, NewRealEstate, Second_Review, Favourits, MyReservations, MyRealEstates
 from django.contrib.auth.models import User
 
 
@@ -104,17 +104,20 @@ class MyReservationsSerializer(serializers.ModelSerializer):
     #
     #     return the_accepted_ones
 class ReservationPeriodSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = ReservationPeriod
         fields = '__all__'
 
+
 class MyRealEstatesSerializer(serializers.ModelSerializer):
-    # Nest the RealEstateSerializer for detailed information
     realestate = RealEstateSerializer(read_only=True)
 
     class Meta:
         model = MyRealEstates
         fields = '__all__'
+
+
 
 
 
@@ -126,3 +129,24 @@ class ReservationPeriodSerializer(serializers.ModelSerializer):
         model = ReservationPeriod
         # Include any additional fields you want to return
         fields = ['id', 'user_name', 'user_phone', 'start_date', 'end_date', 'status']
+
+
+# serializers.py
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username')
+
+
+class Notifications_reservationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Notifications_reservation
+        fields = ('__all__')
+
+class Notifications_Serializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Notifications
+        fields = ('__all__')

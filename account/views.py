@@ -10,6 +10,13 @@ from django.contrib.auth import get_user_model
 from .serializers import SingUpSerializerUser, SingUpSerializerPerson
 from rest_framework.permissions import IsAuthenticated
 from .models import Person
+from reservations.models import Notifications
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import MyTokenObtainPairSerializer
+
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 
 # Now you can use generate_otp() where needed.
 
@@ -18,81 +25,9 @@ from .models import Person
 def current_user(request):
     return Response({
         'username': request.user.username,
-        'email': request.user.email
     })
 
 User = get_user_model()
-
-class UserSignUpView(APIView):
-    def post(self, request):
-        user_data = {
-            'username': request.data.get('username'),
-            'password': request.data.get('password'),
-            'confirm_password': request.data.get('confirm_password'),
-        }
-
-        # Validate user data
-        user_serializer = SingUpSerializerUser(data=user_data)
-        if not user_serializer.is_valid():
-            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = user_serializer.save()
-
-            # Generate JWT tokens
-            refresh = RefreshToken.for_user(user)
-
-            return Response({
-                'message': 'User registered successfully',
-                'user_id': user.id,
-                'access': str(refresh.access_token),  # Access token
-                'refresh': str(refresh),  # Refresh token
-            }, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            # If anything fails, delete the user if it was created
-            if 'user' in locals():
-                user.delete()
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class PersonSignUpView(APIView):
-    permission_classes = [IsAuthenticated]  # Ensure the request is authenticated
-
-    def post(self, request):
-        person_data = {
-            'phone': request.data.get('phone'),
-            'city': request.data.get('city'),
-            'email': request.data.get('email'),
-            'name': request.data.get('name'),
-        }
-        phone = request.data.get('phone')
-
-        if len(phone) != 10 or phone[0] != '0':
-            return Response({'error': 'enter a Syrian number'}, status=status.HTTP_303_SEE_OTHER)
-        if Person.objects.filter(phone=phone).exists():
-            return Response({'error': 'this number is already in use'}, status=status.HTTP_303_SEE_OTHER)
-
-        user = request.user  # Extract the authenticated user from the token
-
-        # Validate person data
-        person_serializer = SingUpSerializerPerson(data=person_data)
-        if not person_serializer.is_valid():
-            return Response(person_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            person = person_serializer.save(user=user)  # Link person to the authenticated user
-
-            return Response({
-                'message': 'Person data registered successfully',
-                'person_id': person.id,
-                'user_id': user.id,
-            }, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 
 @method_decorator(csrf_exempt, name='dispatch')
 class logout_view(APIView):
@@ -109,39 +44,6 @@ class logout_view(APIView):
             return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST)
-#
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# def update_user_info(request):
-#         data=request.data
-#         user = request.user
-#         print('3        ', user.first_name)
-#
-#         person=user.person
-#         if data['confirm_password'] ==data['password'] :
-#             person.name=data['name']
-#             person.email=data['email']
-#             user.username=data['username']
-#             user.set_password(data['password'])
-#             user.save()
-#
-#             person.city=data['city']
-#             person.phone=data['phone']
-#             person.user=user
-#             person.save()
-#             serializer_user = SingUpSerializerUser(user, many=False)
-#             serializer_person = SingUpSerializerPerson(person, many=False)
-#
-#             return Response({'details':'Your account modifyed successfully!' ,
-#                              'user': serializer_user.data,
-#                              'person': serializer_person.data
-#                              },
-#                     status=status.HTTP_201_CREATED
-#                     )
-#         else:
-#                 return Response({'error':'reenter your password '},status=status.HTTP_400_BAD_REQUEST)
-#
-#
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -180,7 +82,6 @@ def update_user_info(request):
     person_data = {
         'phone': data.get('phone'),
         'city': data.get('city'),
-        'email': data.get('email'),
         'name': data.get('name')
     }
     print(33)
@@ -207,7 +108,6 @@ def update_user_info(request):
     # Update the person instance.
     person.phone = person_serializer.validated_data.get('phone', person.phone)
     person.city = person_serializer.validated_data.get('city', person.city)
-    person.email = person_serializer.validated_data.get('email', person.email)
     person.name = person_serializer.validated_data.get('name', person.name)
     person.user = user
     person.save()
@@ -241,7 +141,6 @@ class SignUpView(APIView):
         person_data = {
             'phone': request.data.get('phone'),
             'city': request.data.get('city'),
-            'email': request.data.get('email'),
             'name': request.data.get('name'),
         }
 
@@ -278,3 +177,88 @@ class SignUpView(APIView):
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class PersonSignUpView(APIView):
+    def post(self, request):
+        person_data = {
+            'phone': request.data.get('phone'),
+            'city': request.data.get('city'),
+            'name': request.data.get('name'),
+        }
+        phone = person_data.get('phone')
+
+        # Validate phone number
+        if len(phone) != 10 or phone[0] != '0':
+            return Response({'error': 'Enter a valid Syrian number'}, status=status.HTTP_303_SEE_OTHER)
+
+        # Ensure phone number is unique
+        if Person.objects.filter(phone=phone).exists():
+            return Response({'error': 'This number is already in use'}, status=status.HTTP_303_SEE_OTHER)
+
+        # Validate person data
+        person_serializer = SingUpSerializerPerson(data=person_data)
+        if not person_serializer.is_valid():
+            return Response(person_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Create a person without linking to a user yet
+            person = person_serializer.save()
+
+            return Response({
+                'message': 'Person data registered successfully',
+                'person_id': person.id,
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UserSignUpView(APIView):
+    def post(self, request):
+        print(1)
+
+        user_data = {
+            'username': request.data.get('username'),
+            'password': request.data.get('password'),
+            'confirm_password': request.data.get('confirm_password'),
+            'person_id': request.data.get('person_id'),  # Link to an existing person
+        }
+        print(2)
+        # Validate user data
+        user_serializer = SingUpSerializerUser(data=user_data)
+        if not user_serializer.is_valid():
+            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            print(3)
+
+            person = Person.objects.get(id=user_data['person_id'])  # Fetch the previously created person
+            user = user_serializer.save()
+
+            # Link user to person
+            person.user = user
+            print(4)
+
+            person.save()
+            print(5)
+
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+            Notifications.objects.create(
+                user_to=user,
+                notification_type='welcome_user'
+            )
+
+            return Response({
+                'message': 'User registered successfully',
+                'user_id': user.id,
+                'person_id': person.id,
+                'access': str(refresh.access_token),  # Access token
+                'refresh': str(refresh),  # Refresh token
+            }, status=status.HTTP_201_CREATED)
+
+        except Person.DoesNotExist:
+            return Response({'error': 'Person ID not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

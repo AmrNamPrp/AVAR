@@ -1,8 +1,49 @@
-from rest_framework import serializers
-from django.contrib.auth.models import User
 from .models import Person
-from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth import authenticate, get_user_model
+from rest_framework import serializers
+
+User = get_user_model()
+
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Custom serializer to allow login with either a username or a phone number.
+    The client still sends 'username' and 'password' in the payload.
+    """
+
+    def validate(self, attrs):
+        identifier = attrs.get("username")  # Can be either username or phone
+        password = attrs.get("password")
+
+        # First try to authenticate by treating the identifier as the username.
+        user = authenticate(request=self.context.get("request"), username=identifier, password=password)
+
+        if user is None:
+            # If the above fails, attempt to fetch the user via the phone field in Person.
+            try:
+                person = Person.objects.get(phone=identifier)
+                # Use the username from the associated user object.
+                user = authenticate(request=self.context.get("request"), username=person.user.username,
+                                    password=password)
+            except Person.DoesNotExist:
+                user = None
+
+        if user is None:
+            raise serializers.ValidationError("No active account found with the given credentials.",
+                                              code="authorization")
+
+        self.user = user
+        refresh = self.get_token(user)
+
+        data = {
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+        }
+
+        return data
+
 
 class SingUpSerializerUser(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True, required=True, min_length=8)
@@ -50,12 +91,11 @@ class SingUpSerializerUser(serializers.ModelSerializer):
 class SingUpSerializerPerson(serializers.ModelSerializer):
     class Meta:
         model = Person
-        fields = ('phone', 'city', 'email', 'name')
+        fields = ('phone', 'city',  'name')
         extra_kwargs = {
             'city': {'required': True, 'allow_blank': False},
             'phone': {'required': True, 'allow_blank': False},
             'name': {'required': True, 'allow_blank': False},
-            'email': {'required': False, 'allow_blank': True},
         }
 
 

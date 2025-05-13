@@ -1,12 +1,31 @@
 from rest_framework import serializers
-from .models import Notifications,Notifications_reservation,ReservationPeriod,RealEstate_Images,Extras,Basics,RealEstate, Review, NewRealEstate, Second_Review, Favourits, MyReservations, MyRealEstates
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+from .models import (
+    Notifications_group,
+    Notifications_reservation_group,
+    Notifications,
+    Notifications_reservation,
+    ReservationPeriod,
+    RealEstate_Images,
+    Extras,
+    Basics,
+    RealEstate,
+    Review,
+    NewRealEstate,
+    Second_Review,
+    Favourits,
+
+)
+
+User = get_user_model()  # Use the custom user model
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username']  # add more if needed
+        fields = ['id', 'username']  # Add more fields here if needed
+
 
 class RealEstateImagesSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,53 +33,43 @@ class RealEstateImagesSerializer(serializers.ModelSerializer):
         fields = ['image']  # You can add more fields if necessary.
 
 
+# If you have renamed 'describtion' to 'description' in your models, update these serializers accordingly.
 class BasicsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Basics
-        fields = ['describtion', 'photo']
+        fields = ['describtion', 'photo']  # Change to ['description', 'photo'] if field renamed.
+
 
 class ExtrasSerializer(serializers.ModelSerializer):
     class Meta:
         model = Extras
-        fields = ['describtion', 'photo']
+        fields = ['describtion', 'photo']  # Change to ['description', 'photo'] if field renamed.
 
 
 class RealEstateSerializer(serializers.ModelSerializer):
     is_favorite = serializers.SerializerMethodField()
-    basics = BasicsSerializer(many=True, read_only=True)  # For "المعلومات الاساسية"
-    extras = ExtrasSerializer(many=True, read_only=True)  # For "المعلومات الإضافية"
-    images = RealEstateImagesSerializer(many=True, read_only=True)  # For additional images
-    # photo_url = serializers.SerializerMethodField()
+    basics = BasicsSerializer(many=True, read_only=True)  # For basic info
+    extras = ExtrasSerializer(many=True, read_only=True)  # For additional info
+    images = RealEstateImagesSerializer(many=True, read_only=True)  # Additional images
 
     class Meta:
         model = RealEstate
         fields = [
             'id', 'price', 'city', 'town', 'type',
             'max_members', 'rooms', 'bathrooms',
-            'pool', 'period', 'ratings', 'photo',
+             'period', 'ratings', 'photo',
             'is_favorite', 'basics', 'extras', 'images',
-            'latitude', 'longitude','describtion'
+            'latitude', 'longitude', 'describtion'  # Or 'description' if renamed
         ]
 
     def get_is_favorite(self, obj):
         request = self.context.get('request')
-
         if request and request.user.is_authenticated:
-            is_favorite = obj.favourites_list.filter(user=request.user).exists()
-            i = 0
-            i = i + 1
-            print('realestate: ',obj.id,' the user', request.user, 'is_favorite:', is_favorite)
-            return is_favorite
+            return obj.favourites_list.filter(user=request.user).exists()
         return False
 
-    # def get_photo_url(self, obj):
-    #     request = self.context.get('request')
-    #     if obj.photo and request:
-    #         return request.build_absolute_uri(obj.photo.url)
-    #     return None
 
 class NewRealEstateSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = NewRealEstate
         fields = "__all__"
@@ -73,80 +82,250 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = "__all__"
 
+
 class SecondReviewSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
-
     class Meta:
         model = Second_Review
         fields = "__all__"
 
+
+
+class MYRESERVATIONSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RealEstate
+        fields = [ 'id','photo','type'
+                   ,'period','ratings','price','price','town','city'
+
+
+        ]
+
+
 class FavouritSerializer(serializers.ModelSerializer):
     class Meta:
-        model=Favourits
-        fields="__all__"
+        model = Favourits
+        fields = "__all__"
 
-
-
-class MyReservationsSerializer(serializers.ModelSerializer):
-    # Nest the RealEstateSerializer for detailed information
-    realestate = RealEstateSerializer(read_only=True)
-
-    class Meta:
-        model = MyReservations
-        fields = '__all__'
-    # def get_just_accepted(self, obj):
-    #
-    #     the_accepted_ones = obj.reservationPeriod.filter(status='accepted')
-    #     print('3           2')
-    #     print(the_accepted_ones)
-    #
-    #
-    #
-    #     return the_accepted_ones
-class ReservationPeriodSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = ReservationPeriod
-        fields = '__all__'
-
-
-class MyRealEstatesSerializer(serializers.ModelSerializer):
-    realestate = RealEstateSerializer(read_only=True)
-
-    class Meta:
-        model = MyRealEstates
-        fields = '__all__'
-
-
-
+#
+# class MyReservationsSerializer(serializers.ModelSerializer):
+#     realestate = RealEstateSerializer(read_only=True)
+#     class Meta:
+#         model = MyReservations
+#         fields = '__all__'
 
 
 class ReservationPeriodSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.username', read_only=True)
     user_phone = serializers.CharField(source='user.person.phone', read_only=True)
-
     class Meta:
         model = ReservationPeriod
-        # Include any additional fields you want to return
         fields = ['id', 'user_name', 'user_phone', 'start_date', 'end_date', 'status']
 
 
-# serializers.py
+# Remove duplicate UserSerializer definition if present.
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('id', 'username')
+User = get_user_model()
 
 
 class Notifications_reservationSerializer(serializers.ModelSerializer):
+    propertyId = serializers.SerializerMethodField()
+    startDate = serializers.SerializerMethodField()
+    endDate = serializers.SerializerMethodField()
+    userName = serializers.SerializerMethodField()
+    userPhone = serializers.SerializerMethodField()
+    rejectionReason = serializers.SerializerMethodField()
 
     class Meta:
         model = Notifications_reservation
-        fields = ('__all__')
+        fields = (
+            'id',
+            'user_to',
+            'notification_type',
+            'reservation',
+            'createAt',  # updated field name
+            'seen',
+            'propertyId',
+            'startDate',
+            'endDate',
+            'userName',    # added field
+            'userPhone',   # added field
+            'rejectionReason',  # new field
+        )
+
+    def get_propertyId(self, obj):
+        if obj.reservation and obj.reservation.realestate:
+            return obj.reservation.realestate.id
+        return None
+
+    def get_startDate(self, obj):
+        if obj.reservation:
+            return obj.reservation.start_date
+        return None
+
+    def get_endDate(self, obj):
+        if obj.reservation:
+            return obj.reservation.end_date
+        return None
+
+    def get_userName(self, obj):
+        """
+        Returns the name from the reservation's user.
+        It uses the associated Person if available; otherwise, it falls back to the username.
+        """
+        if obj.reservation and obj.reservation.user:
+            if hasattr(obj.reservation.user, 'person') and obj.reservation.user.person:
+                return obj.reservation.user.person.name
+            return obj.reservation.user.username
+        return None
+
+    def get_userPhone(self, obj):
+        """
+        Returns the user's phone number from the related Person instance.
+        """
+        if obj.reservation and obj.reservation.user:
+            if hasattr(obj.reservation.user, 'person') and obj.reservation.user.person:
+                return obj.reservation.user.person.phone
+        return None
+
+    def get_rejectionReason(self, obj):
+        """
+        Retrieves and returns the rejection reason from the first related ReservationRejection.
+        """
+        if obj.reservation:
+            rejections = obj.reservation.rejections.all()
+            if rejections.exists():
+                return rejections.first().reason
+        return ""
+
 
 class Notifications_Serializer(serializers.ModelSerializer):
+    userName = serializers.SerializerMethodField()
+    userPhone = serializers.SerializerMethodField()
 
     class Meta:
         model = Notifications
-        fields = ('__all__')
+        fields = (
+            'id',
+            'user_to',
+            'notification_type',
+            'createAt',  # updated field name
+            'seen',
+            'userName',
+            'userPhone',
+        )
+
+    def get_userName(self, obj):
+        if obj.user_to:
+            if hasattr(obj.user_to, 'person') and obj.user_to.person:
+                return obj.user_to.person.name
+            return obj.user_to.username
+        return ''
+
+    def get_userPhone(self, obj):
+        if obj.user_to:
+            if hasattr(obj.user_to, 'person') and obj.user_to.person:
+                return obj.user_to.person.phone
+        return ''
+
+
+
+
+
+class Notifications_group_reservationSerializer(serializers.ModelSerializer):
+    propertyId = serializers.SerializerMethodField()
+    startDate = serializers.SerializerMethodField()
+    endDate = serializers.SerializerMethodField()
+    userName = serializers.SerializerMethodField()
+    userPhone = serializers.SerializerMethodField()
+    rejectionReason = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Notifications_reservation_group
+        fields = (
+            'id',
+            'user_to',
+            'notification_type',
+            'reservation',
+            'createAt',  # updated field name
+            'seen',
+            'propertyId',
+            'startDate',
+            'endDate',
+            'client',
+            'userName',
+            'userPhone',
+            'rejectionReason',  # new field
+        )
+
+    def get_propertyId(self, obj):
+        if obj.reservation and obj.reservation.realestate:
+            return obj.reservation.realestate.id
+        return None
+
+    def get_startDate(self, obj):
+        if obj.reservation:
+            return obj.reservation.start_date
+        return None
+
+    def get_endDate(self, obj):
+        if obj.reservation:
+            return obj.reservation.end_date
+        return None
+
+    def get_userName(self, obj):
+        if obj.client:
+            if hasattr(obj.client, 'person') and obj.client.person:
+                return obj.client.person.name
+            return obj.client.username
+        return ''
+
+    def get_userPhone(self, obj):
+        if obj.client:
+            if hasattr(obj.client, 'person') and obj.client.person:
+                return obj.client.person.phone
+        return ''
+
+    def get_rejectionReason(self, obj):
+        """
+        Look up a rejection reason on the related reservation.
+        Returns the reason from the first ReservationRejection (if any).
+        """
+        if obj.reservation:
+            rejections = obj.reservation.rejections.all()  # assuming related_name="rejections"
+            if rejections.exists():
+                return rejections.first().reason
+        return ""
+
+
+
+class Notifications_group_Serializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(read_only=True)
+    userName = serializers.SerializerMethodField()
+    userPhone = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Notifications_group
+        fields = (
+            'id',
+            'user_to',
+            'notification_type',
+            'createAt',  # updated field name
+            'seen',
+            'client',
+            'userName',
+            'userPhone',
+        )
+
+    def get_userName(self, obj):
+        if obj.client:
+            if hasattr(obj.client, 'person') and obj.client.person:
+                return obj.client.person.name
+            return obj.client.username
+        return ''
+
+    def get_userPhone(self, obj):
+        if obj.client:
+            if hasattr(obj.client, 'person') and obj.client.person:
+                return obj.client.person.phone
+        return ''
+

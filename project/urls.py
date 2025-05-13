@@ -24,7 +24,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('account.urls')),
     path('', include('reservations.urls')),
-    path('account/token/', TokenObtainPairView.as_view()),
+    # path('account/token/', TokenObtainPairView.as_view()),
+
 ]
 
 if settings.DEBUG:

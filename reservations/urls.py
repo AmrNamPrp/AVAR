@@ -16,6 +16,12 @@ urlpatterns = [
     path('property_bookings/<int:realestate_id>/', views.property_bookings, name='property-bookings'),
     path('get_accepted_reservations/<int:realestate_id>/', views.get_accepted_reservations, name='get_accepted_reservations'),
     # New endpoints for notifications/actions:
-    path('reservation/assign/<int:reservation_id>/', views.assign_reservation, name='assign_reservation'),
-    path('reservation/handle/<int:reservation_id>/', views.handle_assignment_action, name='handle_assignment_action'),
+    # path('reservation/assign/<int:reservation_id>/', views.assign_reservation, name='assign_reservation'),
+    # path('reservation/handle/<int:reservation_id>/', views.handle_assignment_action, name='handle_assignment_action'),
+    path('notifications/assign-realestate/', views.assign_realestate_notification,
+         name='assign_realestate_notification'),
+    path('reservation/assign/', views.assign_reservation_notification, name='assign_reservation_notification'),
+    path('reservation/response/', views.handle_reservation_response, name='handle_reservation_response'),
+    path('save-expo-token/', views.save_expo_token),
+    path('send-notification/', views.send_notification),
 ]
